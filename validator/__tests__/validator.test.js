@@ -2,10 +2,11 @@
 
 const schema = {
   fields : {
-    name : { type : 'string' },
+    name : { type : 'object' },
     eyes : { type : 'string' },
     hands : { type : 'number' },
-    cool : { type : 'boolean' }
+    cool : { type : 'boolean' },
+    likes : { type : 'array' },
   }
 };
 
@@ -50,10 +51,9 @@ describe('validator module performs basic validation of', () => {
   });
 
   it('objects', () => {
-    expect(validator.isObject(arr)).toBeTruthy();
     expect(validator.isObject(obj)).toBeTruthy();
 
-    [str,num,func,bool].forEach( value => {
+    [str,num,func,bool,arr].forEach( value => {
       expect(validator.isObject(value)).toBeFalsy();
     });
   });
@@ -76,59 +76,83 @@ describe('validator module performs basic validation of', () => {
 
 });
 
-describe('validator module performs complex validations', () => {
-  
+describe('validator tests if an object is valid by comparing against a schema', () => {
+
+  let likesArray = [ ['stuff','more stuff'], [1,2], [['a'],['b']], [()=>{}], [{}] ];
+
   let testtrue = {
-    name : 'asdf',
+    name : {
+      first : 'asdf',
+      last : 'qwer'
+    },
     eyes : 'yes',
     hands : 2,
-    cool : false
+    cool : false,
+    likes : [ 'stuff', 'other stuff' ]
   };
 
-  let testfalse = {
-    name : 'asdf',
-    eyes : 2,
-    hands : 3,
-    cool : 'maybe'
+  let testfalse1 = {
+    name : {
+      first : 'asdf',
+      last : 'qwer'
+    },
+    eyes : 'yes',
+    hands : [ 1, 2 ],
+    cool : true,
+    likes : [ 'stuff' ]
   }
 
-  it('validates the presence of required object properties at any level', () => {
-    // i.e. does person.hair.color exist and have a good value, not just person.hair
 
-    expect(validator.testKey( testtrue, schema )).toEqual(true);
-    expect(validator.testKey( testfalse, schema )).toEqual(true);
+  let testfalse2 = {
+    name : {
+      first : 'asdf',
+      last : 'qwer'
+    },
+    eyes : 2,
+    hands : 3,
+    cool : 'maybe',
+    likes : [ 'stuff' ]
+  }
 
-  });
+  let testfalse3 = {
+    name : {
+      first : 'asdf',
+      last : 'qwer'
+    },
+    hair : 2,
+    hands : 3,
+    cool : 'maybe',
+    likes : [ 'stuff' ]
+  }
 
-  it('validates the proper types of object properties', () => {
+  test('test if object is an object', () => {
 
-    expect(validator.testProperty( testtrue, schema )).toEqual(true);
-    expect(validator.testProperty( testfalse, schema )).toEqual(false);
-
-  });
-
-  it('validates the types of values contained in an array', () => {
-    // i.e. an array of all strings or numbers
-    let numArray = [ -1, 10, 0.1, -15.5 ];
-    let testArray1 = [ ['a'], () => {}, {}, false ];
-    let strArray = [ '-1', '10', '0.1', '-15.5' ];
-
-    expect(validator.validateArrayValues( 'number', numArray )).toEqual(true);
-    expect(validator.validateArrayValues( 'number', testArray1 )).toEqual(false);
-    expect(validator.validateArrayValues( 'string', strArray )).toEqual(true);
-
-  });
-
-  it('validates a value array against an approved list', () => {
-    // i.e. a string might only be allowed to be "yes" or "no"
-    let approvedCool = [ true, false ];
-
-    expect(validator.checkCool( testtrue, approvedCool)).toEqual(true);
-    expect(validator.checkCool( testfalse, approvedCool)).toEqual(false);
+    expect(validator.isObject( testtrue )).toEqual(true);
+    expect(validator.isObject( {} )).toEqual(true);
+    expect(validator.isObject( [] )).toEqual(false);
 
   });
 
-  // TODO: Cover so, so many more cases
+  test('if it is an object then test if keys match schema', () => {
+
+    expect(validator.checkObject( testtrue )).toEqual(true);
+    expect(validator.checkObject( testfalse3 )).toEqual(false);
+
+  });
+
+  test('if keys match then test if property types match schema', () => {
+
+    expect(validator.checkObject( testfalse1 )).toEqual(false);
+    expect(validator.checkObject( testfalse2 )).toEqual(false);
+    
+    likesArray.forEach( array => {
+      testtrue.likes = array;
+      expect(validator.checkObject( testtrue )).toEqual(true);
+    });
+
+
+  });
+
 
 });
 
