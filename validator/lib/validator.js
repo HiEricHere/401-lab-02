@@ -21,7 +21,7 @@ class Validator {
   }
 
   isObject(input) {
-    return typeof input === 'object';
+    return typeof input === 'object' && !this.isArray(input);
   }
 
   isBoolean(input) {
@@ -32,81 +32,60 @@ class Validator {
     return typeof input === 'function';
   }
 
-  testKey( object ) {
+  checkObject( object ){
 
-    let keys = Object.keys( object );
-    for ( let i = 0; i < keys.length; i++ ){
-      if ( !this.schema.fields[ keys[i] ] ) return false;
-    }
+    if ( this.isObject( object ) ){
 
-    return true;
+      let objectData = Object.entries( object );
+      let schemaData = Object.entries( this.schema.fields );
 
-  }
-
-  testProperty( object ) {
-
-    let properties = Object.entries(object);
-    for ( let i = 0; i < properties.length; i++ ){
-      if ( typeof properties[i][1] !== this.schema.fields[ properties[i][0] ].type ){
-        return false;
+      for ( let i = 0; i < objectData.length; i++ ){
+        if( objectData[i][0] !== schemaData[i][0] ){ //if keys !=
+          return false;
+        } else {
+          if ( !this.isArray( objectData[i][1] ) ){ //if not array
+            if ( typeof objectData[i][1] !== schemaData[i][1].type ) return false;
+          } else { //is array
+            if ( this.isArray( objectData[i][1] ) && schemaData[i][1].type !== 'array' ){
+              return false;
+            } else { //test array value type
+              for ( let j = 0; j < objectData[i][1].length; j++ ){
+                if ( this.validateArrayValues( schemaData[i][1].type, objectData[i][1][j] === false ) ) return false;
+              }
+            }
+          }
+        }
       }
-    }
 
-    return true;
+      return true;
 
+    } else return false;
   }
 
-  validateArrayValues( type, array ) {
+  validateArrayValues( type, value ) {
 
     switch( type ) {
 
     case 'number' :
-      for( let i = 0; i < array.length; i++ ){
-        if ( !this.isNumber( array[i] ) ) {
-          return false;
-        }
-      }
-      return true;
+      return this.isNumber(value);
 
     case 'string' :
-      for( let i = 0; i < array.length; i++ ){
-        if ( !this.isString( array[i] ) ) {
-          return false;
-        }
-      }
-      return true;
+      return this.isString(value);
 
     case 'array' :
-      for( let i = 0; i < array.length; i++ ){
-        if ( !this.isArray( array[i] ) ) {
-          return false;
-        }
-      }
-      return true;
+      return this.isArray(value);
 
     case 'object' :
-      for( let i = 0; i < array.length; i++ ){
-        if ( !this.isObject( array[i] ) ) {
-          return false;
-        }
-      }
-      return true;
+      return this.isObject(value);
 
     case 'function' :
-      for( let i = 0; i < array.length; i++ ){
-        if ( !this.isFunction( array[i] ) ) {
-          return false;
-        }
-      }
-      return true;
+      return this.isFunction(value);
 
     }
-  }
 
-  checkCool( object, approvedList ){
-    return approvedList.includes(object.cool);
   }
 
 }
 
 module.exports = Validator;
+
